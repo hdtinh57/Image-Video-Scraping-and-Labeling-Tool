@@ -1,0 +1,6 @@
+PyQt5
+opencv-python
+duckduckgo_search
+yt_dlp
+requests
+matplotlib  # (if used for visualization testing)
