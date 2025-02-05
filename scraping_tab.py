@@ -16,7 +16,7 @@ class ScrapingTab(QWidget):
     def initUI(self):
         layout = QVBoxLayout()
 
-        # Nhập tên class và từ khóa
+        # Input for class name and search keyword
         input_layout = QHBoxLayout()
         self.class_input = QLineEdit()
         self.class_input.setPlaceholderText("Tên class (ví dụ: cat)")
@@ -28,19 +28,19 @@ class ScrapingTab(QWidget):
         input_layout.addWidget(self.keyword_input)
         layout.addLayout(input_layout)
 
-        # Nút fetch ảnh
+        # Fetch images button
         self.fetch_button = QPushButton("Fetch Images")
         self.fetch_button.clicked.connect(self.fetch_images)
         layout.addWidget(self.fetch_button)
 
-        # Hiển thị preview ảnh
+        # Image preview label
         self.image_label = QLabel("Ảnh sẽ hiển thị tại đây")
         self.image_label.setFixedSize(600, 400)
         self.image_label.setStyleSheet("border: 1px solid black;")
         self.image_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.image_label)
 
-        # Nút Download và Skip
+        # Download and Skip buttons
         btn_layout = QHBoxLayout()
         self.download_button = QPushButton("Download Image")
         self.download_button.clicked.connect(self.download_image)
@@ -105,7 +105,14 @@ class ScrapingTab(QWidget):
                 folder = os.path.join("dataset", self.class_input.text().strip())
                 if not os.path.exists(folder):
                     os.makedirs(folder)
-                filename = os.path.join(folder, f"{self.class_input.text().strip()}_{self.current_index}.jpg")
+                # Build the base filename
+                base_name = f"{self.class_input.text().strip()}_{self.current_index}"
+                filename = os.path.join(folder, f"{base_name}.jpg")
+                # If a file with the same name exists, append a counter (e.g., _2, _3, ...)
+                counter = 2
+                while os.path.exists(filename):
+                    filename = os.path.join(folder, f"{base_name}_{counter}.jpg")
+                    counter += 1
                 with open(filename, "wb") as f:
                     f.write(response.content)
                 QMessageBox.information(self, "Info", f"Ảnh đã lưu: {filename}")
