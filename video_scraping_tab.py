@@ -1,4 +1,10 @@
-# video_scraping_tab.py
+"""
+File: video_scraping_tab.py
+Mô tả:
+    Chứa widget VideoScrapingTab dùng để tải video từ file hoặc từ link YouTube,
+    hiển thị frame, điều chỉnh thời gian và lưu các frame đã chọn.
+"""
+
 import os
 import cv2
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSlider, QMessageBox
@@ -8,7 +14,18 @@ from yt_dlp import YoutubeDL
 from utils import format_time, parse_time, sanitize_filename
 
 class VideoScrapingTab(QWidget):
+    """
+    Widget cho phép tải và xử lý video.
+    
+    Cho phép:
+      - Nhập link YouTube hoặc chọn file video.
+      - Hiển thị frame hiện tại và điều chỉnh qua slider.
+      - Nhảy đến thời gian xác định và lưu frame dưới dạng ảnh.
+    """
     def __init__(self, parent=None):
+        """
+        Khởi tạo widget VideoScrapingTab.
+        """
         super().__init__(parent)
         self.cap = None
         self.current_frame_index = 0
@@ -18,6 +35,13 @@ class VideoScrapingTab(QWidget):
         self.initUI()
 
     def initUI(self):
+        """
+        Thiết lập giao diện của tab Video Scraping:
+          - Ô nhập link/file video, nút browse và load video.
+          - Label hiển thị frame.
+          - Slider điều chỉnh frame và hiển thị thời gian.
+          - Nút điều hướng (Previous/Next) và lưu frame.
+        """
         layout = QVBoxLayout()
 
         # Input cho video file hoặc link YouTube
@@ -80,11 +104,21 @@ class VideoScrapingTab(QWidget):
         self.setLayout(layout)
 
     def slider_moved(self, value):
+        """
+        Xử lý sự kiện khi thanh trượt (slider) di chuyển.
+        
+        Cập nhật frame hiện tại và thời gian hiển thị.
+        
+        :param value: Vị trí frame tương ứng với giá trị slider.
+        """
         self.current_frame_index = value
         self.show_frame(value)
         self.update_time_label()
 
     def update_time_label(self):
+        """
+        Cập nhật nhãn thời gian hiển thị dựa trên frame hiện tại và tổng số frame.
+        """
         if self.fps > 0 and self.total_frames > 0:
             current_time = self.current_frame_index / self.fps
             total_time = self.total_frames / self.fps
@@ -93,6 +127,12 @@ class VideoScrapingTab(QWidget):
             self.time_label.setText("Time: 00:00 / 00:00")
 
     def go_to_time(self):
+        """
+        Nhảy đến frame tương ứng với thời gian nhập vào.
+        
+        Chuyển chuỗi thời gian (ss, mm:ss, hoặc hh:mm:ss) thành số giây và tính frame index.
+        Nếu định dạng không hợp lệ, hiển thị cảnh báo.
+        """
         time_str = self.time_input.text().strip()
         try:
             seconds = parse_time(time_str)
@@ -113,11 +153,21 @@ class VideoScrapingTab(QWidget):
         self.update_time_label()
 
     def browse_file(self):
+        """
+        Mở hộp thoại chọn file để người dùng chọn file video từ máy tính.
+        """
         filename, _ = QFileDialog.getOpenFileName(self, "Chọn file video", "", "Video Files (*.mp4 *.avi *.mkv *.mov *.webm)")
         if filename:
             self.video_input.setText(filename)
     
     def load_video(self):
+        """
+        Tải video từ nguồn nhập vào (link YouTube hoặc file video).
+        
+        Nếu là link YouTube, sử dụng yt_dlp để tải về file video.
+        Sau khi tải thành công, thiết lập các thông số (fps, tổng frame, slider, ...).
+        Nếu không mở được video, hiển thị thông báo lỗi.
+        """
         source = self.video_input.text().strip()
         if source.startswith("http"):
             try:
@@ -155,6 +205,14 @@ class VideoScrapingTab(QWidget):
             QMessageBox.warning(self, "Error", "Không mở được video!")
 
     def show_frame(self, frame_index):
+        """
+        Hiển thị frame tương ứng với chỉ số frame_index từ video.
+        
+        Đọc frame từ video, chuyển đổi màu và hiển thị trên label.
+        Nếu không đọc được frame, hiển thị thông báo lỗi.
+        
+        :param frame_index: Chỉ số frame cần hiển thị.
+        """
         if self.cap is None or not self.cap.isOpened():
             return
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
@@ -172,6 +230,9 @@ class VideoScrapingTab(QWidget):
         self.frame_label.setPixmap(scaled_pixmap)
 
     def next_frame(self):
+        """
+        Chuyển sang frame tiếp theo nếu chưa đạt đến frame cuối.
+        """
         if self.cap is None:
             return
         if self.current_frame_index < self.total_frames - 1:
@@ -181,6 +242,9 @@ class VideoScrapingTab(QWidget):
             self.update_time_label()
 
     def prev_frame(self):
+        """
+        Chuyển sang frame trước nếu chưa đạt đến frame đầu.
+        """
         if self.cap is None:
             return
         if self.current_frame_index > 0:
@@ -190,6 +254,12 @@ class VideoScrapingTab(QWidget):
             self.update_time_label()
     
     def save_frame(self):
+        """
+        Lưu frame hiện tại dưới dạng file ảnh (.jpg).
+        
+        Tên file được xây dựng dựa trên tên video (đã được sanitize) và số thứ tự frame.
+        Frame được lưu vào thư mục 'dataset/<tên_video>/'.
+        """
         if self.current_frame is None:
             return
         # Lấy tên video từ thuộc tính video_title, nếu không có thì lấy từ video_input
